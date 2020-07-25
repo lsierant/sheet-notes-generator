@@ -2,6 +2,7 @@ package lilypond
 
 import (
 	"fmt"
+	"github.com/lsierant/notes-gen/pkg/notes"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -35,7 +36,6 @@ func (r *Renderer) RenderPNG(source string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to get working dir: %v", err)
 	}
 
-	//-dpixmap-format=pngalpha
 	argsStr := `run -v %s/%s:/d docker.io/airdock/lilypond:latest -dresolution=300 --png -dbackend=eps -dno-gs-load-fonts -dinclude-eps-fonts -o /d/out /d/1.ly`
 	args := strings.Split(fmt.Sprintf(argsStr, pwd, tmpDir), " ")
 	commandName := "docker"
@@ -52,5 +52,37 @@ func (r *Renderer) RenderPNG(source string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to read png file: %v", err)
 	}
 
+	err = os.RemoveAll(tmpDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to cleanup tmp dir %s: %v", tmpDir, err)
+	}
 	return pngBytes, nil
+}
+
+func RenderIntervalImage(renderer *Renderer, interval notes.Interval) ([]byte, error) {
+	first := interval.FirstNote
+	second := interval.SecondNote
+
+	var source string
+	var err error
+	if first.BassClef && second.BassClef {
+		source, err = parseAndRenderTextTemplate("interval", bassOnlyIntervalTemplate, interval)
+	} else if first.BassClef && second.TrebleClef {
+		source, err = parseAndRenderTextTemplate("interval", bassAndTrebleIntervalTemplate, interval)
+	} else if first.TrebleClef && second.TrebleClef {
+		source, err = parseAndRenderTextTemplate("interval", trebleOnlyIntervalTemplate, interval)
+	} else {
+		return nil, fmt.Errorf("not supported interval: %+v", interval)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to render interval template: %v", err)
+	}
+
+	png, err := renderer.RenderPNG(source)
+	if err != nil {
+		return nil, fmt.Errorf("failed to render PNG from source: %s: %v", source, err)
+	}
+
+	return png, err
 }
