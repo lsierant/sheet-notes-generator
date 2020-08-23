@@ -22,7 +22,6 @@ func parseAndRenderTextTemplate(templateName string, tpl string, data interface{
 
 var trebleOnlyIntervalTemplate = `
 \version "2.14.1"
-\include "english.ly"
 \include "lilypond-book-preamble.ly" 
 
 \paper{
@@ -44,7 +43,7 @@ upper = {
 
 lower = {
     \once \override Staff.TimeSignature #'transparent = ##t
-    \key c \major
+	\key c \major
     \clef bass
     
 	s4
@@ -85,7 +84,7 @@ upper = {
 
 lower = {
     \once \override Staff.TimeSignature #'transparent = ##t
-    \key c \major
+	\key c \major
     \clef bass
     <{{.FirstNote.LilypondSymbol}} {{.SecondNote.LilypondSymbol}}>4
 }
@@ -125,7 +124,7 @@ upper = {
 
 lower = {
     \once \override Staff.TimeSignature #'transparent = ##t
-    \key c \major
+	\key c \major
     \clef bass
 
   {{.FirstNote.LilypondSymbol}}4

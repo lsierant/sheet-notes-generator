@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"crypto/md5"
 	"flag"
 	"fmt"
 	"github.com/lsierant/notes-gen/pkg/lilypond"
 	"github.com/lsierant/notes-gen/pkg/notes"
+	"github.com/lsierant/notes-gen/pkg/utils"
 	"io/ioutil"
 	"log"
 	"os"
@@ -14,6 +16,14 @@ import (
 )
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	utils.HandleSignals(func(code os.Signal) {
+		log.Printf("Received signal %d", code)
+		cancel()
+	})
+
 	tmpDir := flag.String("tmpDir", "tmp", "temp directory for generating lilypond images")
 	imageDir := flag.String("imageDir", "images", "destination directory for storing generated images")
 	deckFilePath := flag.String("deckFilePath", "deck.csv", "path to generated deck file")
@@ -27,18 +37,20 @@ func main() {
 
 	renderer := lilypond.Renderer{WorkingDir: *tmpDir}
 
-	for i := 0; i < len(intervals); i++ {
-		err := renderIntervalAndWriteFile(renderer, intervals[i], fmt.Sprintf("%s/%s", *imageDir, fmt.Sprintf("%s.png", intervalFileName(intervals[i]))))
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
 	deckFileContent := prepareDeck(intervals)
 
 	err := ioutil.WriteFile(*deckFilePath, []byte(deckFileContent), 0660)
 	if err != nil {
-		fmt.Printf("error writing file: %v", err)
+		log.Fatalf("errors while rendering files:\n%v", err)
+	}
+
+	err = utils.RunInParallel(ctx, len(intervals), 10, func(idx int) error {
+		intervalFileName := fmt.Sprintf("%s/%s", *imageDir, fmt.Sprintf("%s.png", intervalFileName(intervals[idx])))
+		return renderIntervalAndWriteFile(ctx, renderer, intervals[idx], intervalFileName)
+	})
+
+	if err != nil {
+		log.Fatalf("error writing file: %v", err)
 	}
 
 	fmt.Println("Done...")
@@ -62,8 +74,8 @@ func deckLine(interval notes.Interval) string {
 	return fmt.Sprintf(`"%s";"%s"`, frontText, backText)
 }
 
-func renderIntervalAndWriteFile(renderer lilypond.Renderer, interval notes.Interval, intervalFilePath string) error {
-	png, err := lilypond.RenderIntervalImage(&renderer, interval)
+func renderIntervalAndWriteFile(ctx context.Context, renderer lilypond.Renderer, interval notes.Interval, intervalFilePath string) error {
+	png, err := lilypond.RenderIntervalImage(ctx, &renderer, interval)
 
 	if err != nil {
 		return fmt.Errorf("failed to render lilypond image: %v", err)

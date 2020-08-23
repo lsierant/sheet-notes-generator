@@ -2,3 +2,12 @@ bin
 .idea
 tmp
 .DS_Store
+images
+*.csv
+*.eps
+*.mid
+*.count
+*.tex
+*.texi
+*.png
+*.midi

@@ -1,6 +1,7 @@
 package lilypond
 
 import (
+	"context"
 	"fmt"
 	"github.com/lsierant/notes-gen/pkg/notes"
 	"io/ioutil"
@@ -13,7 +14,7 @@ type Renderer struct {
 	WorkingDir string
 }
 
-func (r *Renderer) RenderPNG(source string) ([]byte, error) {
+func (r *Renderer) RenderPNG(ctx context.Context, source string) ([]byte, error) {
 	tmpDir, err := ioutil.TempDir(r.WorkingDir, "sources-*")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp dir: %v", tmpDir)
@@ -39,7 +40,7 @@ func (r *Renderer) RenderPNG(source string) ([]byte, error) {
 	argsStr := `run -v %s/%s:/d docker.io/airdock/lilypond:latest -dresolution=300 --png -dbackend=eps -dno-gs-load-fonts -dinclude-eps-fonts -o /d/out /d/1.ly`
 	args := strings.Split(fmt.Sprintf(argsStr, pwd, tmpDir), " ")
 	commandName := "docker"
-	command := exec.Command(commandName, args...)
+	command := exec.CommandContext(ctx, commandName, args...)
 	output, err := command.CombinedOutput()
 	fmt.Printf("running command: \n%s %s\n", commandName, strings.Join(args, " "))
 	fmt.Printf("%s", output)
@@ -59,7 +60,7 @@ func (r *Renderer) RenderPNG(source string) ([]byte, error) {
 	return pngBytes, nil
 }
 
-func RenderIntervalImage(renderer *Renderer, interval notes.Interval) ([]byte, error) {
+func RenderIntervalImage(ctx context.Context, renderer *Renderer, interval notes.Interval) ([]byte, error) {
 	first := interval.FirstNote
 	second := interval.SecondNote
 
@@ -79,7 +80,7 @@ func RenderIntervalImage(renderer *Renderer, interval notes.Interval) ([]byte, e
 		return nil, fmt.Errorf("failed to render interval template: %v", err)
 	}
 
-	png, err := renderer.RenderPNG(source)
+	png, err := renderer.RenderPNG(ctx, source)
 	if err != nil {
 		return nil, fmt.Errorf("failed to render PNG from source: %s: %v", source, err)
 	}
