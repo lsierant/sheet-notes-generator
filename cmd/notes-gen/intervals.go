@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"runtime"
 	"sort"
 	"strings"
 )
@@ -27,25 +28,44 @@ func main() {
 	tmpDir := flag.String("tmpDir", "tmp", "temp directory for generating lilypond images")
 	imageDir := flag.String("imageDir", "images", "destination directory for storing generated images")
 	deckFilePath := flag.String("deckFilePath", "deck.csv", "path to generated deck file")
+	htmlFilePath := flag.String("htmlFilePath", "", "path to generated html file with all images")
+	parallel := flag.Int("parallel", runtime.NumCPU(), "level of parallelism, defaults to number of CPUs")
+	scaleFlag := flag.String("scale", "c major", `scale to use, e.g. "c flat major", "d minor", "c sharp minor", default: "c major"`)
 
 	flag.Parse()
 
-	intervals := notes.GenerateIntervals(notes.AllNotes, 0, len(notes.AllNotes), 12)
-	for i := 0; i < len(intervals); i++ {
-		fmt.Printf("%s %s -> %s %s\n", intervals[i].FirstNote, intervals[i].FirstNote.LilypondSymbol(), intervals[i].SecondNote, intervals[i].SecondNote.LilypondSymbol())
+	scales, err := filterScales(*scaleFlag)
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	intervals := generateIntervals(scales)
 
 	renderer := lilypond.Renderer{WorkingDir: *tmpDir}
 
 	deckFileContent := prepareDeck(intervals)
 
-	err := ioutil.WriteFile(*deckFilePath, []byte(deckFileContent), 0660)
+	err = ioutil.WriteFile(*deckFilePath, []byte(deckFileContent), 0660)
 	if err != nil {
-		log.Fatalf("errors while rendering files:\n%v", err)
+		log.Fatalf("errors while rendering file:\n%v", err)
 	}
 
-	err = utils.RunInParallel(ctx, len(intervals), 10, func(idx int) error {
+	if htmlFilePath != nil && *htmlFilePath != "" {
+		htmlFileContent := prepareHtml(intervals)
+
+		err = ioutil.WriteFile(*htmlFilePath, []byte(htmlFileContent), 0660)
+		if err != nil {
+			log.Fatalf("errors while rendering html file:\n%v", err)
+		}
+	}
+
+	err = utils.RunInParallel(ctx, len(intervals), *parallel, func(idx int) error {
 		intervalFileName := fmt.Sprintf("%s/%s", *imageDir, fmt.Sprintf("%s.png", intervalFileName(intervals[idx])))
+		if _, err := os.Stat(intervalFileName); err == nil {
+			fmt.Printf("Skipping rendering: %s\n", intervalFileName)
+			return nil
+		}
+
 		return renderIntervalAndWriteFile(ctx, renderer, intervals[idx], intervalFileName)
 	})
 
@@ -54,6 +74,45 @@ func main() {
 	}
 
 	fmt.Println("Done...")
+}
+
+func generateIntervals(scales []notes.Scale) []notes.Interval {
+	var intervals []notes.Interval
+
+	for _, scale := range scales {
+		notesInScale := notes.ApplyScale(notes.AllNotes, scale)
+		intervalsInScale := notes.GenerateIntervals(notesInScale, 0, len(notesInScale), 12)
+		fmt.Printf("Scale: %s\n", scale.Name)
+		for i := 0; i < len(intervalsInScale); i++ {
+			fmt.Printf("%s %s -> %s %s\n", intervalsInScale[i].FirstNote.NameWithModifier(), intervalsInScale[i].FirstNote.LilypondSymbol(), intervalsInScale[i].SecondNote.NameWithModifier(), intervalsInScale[i].SecondNote.LilypondSymbol())
+		}
+		intervals = append(intervals, intervalsInScale...)
+	}
+
+	return intervals
+}
+
+func filterScales(scaleFlag string) ([]notes.Scale, error) {
+	var scales []notes.Scale
+	if scaleFlag == "major" {
+		for _, scale := range notes.ScaleMap {
+			if scale.Mode == notes.ScaleModeMajor {
+				scales = append(scales, scale)
+			}
+		}
+	} else {
+		scale, ok := notes.ScaleMap[scaleFlag]
+		if !ok {
+			return nil, fmt.Errorf("invalid scale: %s", scaleFlag)
+		}
+		scales = append(scales, scale)
+	}
+
+	if len(scales) == 0 {
+		return nil, fmt.Errorf("no scales found for: %s", scaleFlag)
+	}
+
+	return scales, nil
 }
 
 func prepareDeck(intervals []notes.Interval) string {
@@ -67,11 +126,53 @@ func prepareDeck(intervals []notes.Interval) string {
 	return strings.Join(deckLines, "\n")
 }
 
-func deckLine(interval notes.Interval) string {
-	frontText := fmt.Sprintf("<img src=\"\"%s.png\"\">", intervalFileName(interval))
-	backText := fmt.Sprintf("%s (%d), %s -> %s", interval.Name(), interval.Distance(), interval.FirstNote.Name, interval.SecondNote.Name)
+func prepareHtml(intervals []notes.Interval) string {
+	sort.Slice(intervals, func(i int, j int) bool {
+		if len(intervals[i].FirstNote.Scale.NotesModified) != len(intervals[j].FirstNote.Scale.NotesModified) {
+			return len(intervals[i].FirstNote.Scale.NotesModified) < len(intervals[j].FirstNote.Scale.NotesModified)
+		}
 
-	return fmt.Sprintf(`"%s";"%s"`, frontText, backText)
+		if intervals[i].FirstNote.Scale.Name != intervals[j].FirstNote.Scale.Name {
+			return intervals[i].FirstNote.Scale.Name < intervals[j].FirstNote.Scale.Name
+		}
+
+		if intervals[i].Distance() != intervals[j].Distance() {
+			return intervals[i].Distance() < intervals[j].Distance()
+		}
+
+		if intervals[i].FirstNote.ToneIndex() != intervals[j].FirstNote.ToneIndex() {
+			return intervals[i].FirstNote.ToneIndex() < intervals[j].FirstNote.ToneIndex()
+		}
+
+		return intervals[i].SecondNote.ToneIndex() != intervals[j].SecondNote.ToneIndex()
+	})
+
+	lines := make([]string, 0)
+	for i := 0; i < len(intervals); i++ {
+		imageSrc := fmt.Sprintf("images/%s.png", intervalFileName(intervals[i]))
+		lines = append(lines, fmt.Sprintf(`
+<div><img style="vertical-align:middle" src="%s" width="150"><span style="margin-left: 30pt;">%s</span></div><br><hr>`, imageSrc, backText(intervals[i])))
+	}
+
+	return fmt.Sprintf(`
+<html>
+<body>
+%s
+</body>
+</html>
+`, strings.Join(lines, "\n"))
+}
+
+func deckLine(interval notes.Interval) string {
+	return fmt.Sprintf(`"%s";"%s"`, frontText(interval), backText(interval))
+}
+
+func backText(interval notes.Interval) string {
+	return fmt.Sprintf("%s (%d), %s -> %s", interval.Name(), interval.Distance(), interval.FirstNote.NameWithModifier(), interval.SecondNote.NameWithModifier())
+}
+
+func frontText(interval notes.Interval) string {
+	return fmt.Sprintf("<img src=\"\"%s.png\"\">", intervalFileName(interval))
 }
 
 func renderIntervalAndWriteFile(ctx context.Context, renderer lilypond.Renderer, interval notes.Interval, intervalFilePath string) error {
@@ -92,7 +193,8 @@ func renderIntervalAndWriteFile(ctx context.Context, renderer lilypond.Renderer,
 }
 
 func intervalFileName(interval notes.Interval) string {
-	intervalFileName := fmt.Sprintf("%s_%s", interval.FirstNote, interval.SecondNote)
+	scaleName := strings.ReplaceAll(interval.FirstNote.Scale.Name, " ", "_")
+	intervalFileName := fmt.Sprintf("%s_%s_%s", scaleName, interval.FirstNote, interval.SecondNote)
 	md5Hash := fmt.Sprintf("%x", md5.Sum([]byte(intervalFileName)))
 	return fmt.Sprintf("ng-%s-%s", md5Hash, intervalFileName)
 }

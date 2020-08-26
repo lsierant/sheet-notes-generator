@@ -36,14 +36,16 @@ var trebleOnlyIntervalTemplate = `
 upper = {
   \clef treble
   \once \override Staff.TimeSignature #'transparent = ##t
-  \key c \major
+  \key {{.FirstNote.Scale.LilypondSymbol}}
+
   
   <{{.FirstNote.LilypondSymbol}} {{.SecondNote.LilypondSymbol}}>4
 }
 
 lower = {
     \once \override Staff.TimeSignature #'transparent = ##t
-	\key c \major
+	\key {{.FirstNote.Scale.LilypondSymbol}}
+
     \clef bass
     
 	s4
@@ -62,7 +64,6 @@ lower = {
 
 var bassOnlyIntervalTemplate = `
 \version "2.14.1"
-\include "english.ly"
 \include "lilypond-book-preamble.ly" 
 
 \paper{
@@ -77,14 +78,16 @@ var bassOnlyIntervalTemplate = `
 upper = {
   \clef treble
   \once \override Staff.TimeSignature #'transparent = ##t
-  \key c \major
+  \key {{.FirstNote.Scale.LilypondSymbol}}
+
   
   s4
 }
 
 lower = {
     \once \override Staff.TimeSignature #'transparent = ##t
-	\key c \major
+	\key {{.FirstNote.Scale.LilypondSymbol}}
+
     \clef bass
     <{{.FirstNote.LilypondSymbol}} {{.SecondNote.LilypondSymbol}}>4
 }
@@ -102,7 +105,6 @@ lower = {
 
 var bassAndTrebleIntervalTemplate = `
 \version "2.14.1"
-\include "english.ly"
 \include "lilypond-book-preamble.ly" 
 
 \paper{
@@ -117,14 +119,15 @@ var bassAndTrebleIntervalTemplate = `
 upper = {
   \clef treble
   \once \override Staff.TimeSignature #'transparent = ##t
-  \key c \major
+  \key {{.FirstNote.Scale.LilypondSymbol}}
   
   {{.SecondNote.LilypondSymbol}}4
 }
 
 lower = {
     \once \override Staff.TimeSignature #'transparent = ##t
-	\key c \major
+	\key {{.FirstNote.Scale.LilypondSymbol}}
+
     \clef bass
 
   {{.FirstNote.LilypondSymbol}}4

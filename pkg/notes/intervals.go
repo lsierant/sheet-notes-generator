@@ -3,7 +3,7 @@ package notes
 func GenerateIntervals(noteList []Note, startIndex int, endIndex int, maxDist int) []Interval {
 	var intervals []Interval
 	for i := startIndex; i < endIndex; i++ {
-		for j := i + 1; j < endIndex && noteList[j].Index-noteList[i].Index <= maxDist; j++ {
+		for j := i + 1; j < endIndex && noteList[j].ToneIndex()-noteList[i].ToneIndex() <= maxDist; j++ {
 			first := noteList[i]
 			second := noteList[j]
 

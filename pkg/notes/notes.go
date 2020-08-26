@@ -6,16 +6,21 @@ type NoteModifier int
 
 const (
 	NoteModifierNone  NoteModifier = 0
-	NoteModifierSharp NoteModifier = 1
-	NoteModifierFlat  NoteModifier = 2
+	NoteModifierSharp NoteModifier = +1
+	NoteModifierFlat  NoteModifier = -1
 )
 
 type Note struct {
-	Name       string
-	Modifier   NoteModifier
-	Index      int
-	TrebleClef bool
-	BassClef   bool
+	Name          string
+	Modifier      NoteModifier
+	BaseNoteIndex int
+	TrebleClef    bool
+	BassClef      bool
+	Scale         Scale
+}
+
+func (n Note) ToneIndex() int {
+	return n.BaseNoteIndex + int(n.Modifier)
 }
 
 func (n Note) String() string {
@@ -39,22 +44,40 @@ func (n Note) String() string {
 	return result
 }
 
+func noteNameWithModifier(noteName string, modifier NoteModifier) string {
+	switch modifier {
+	case NoteModifierSharp:
+		return noteName + "is"
+	case NoteModifierFlat:
+		if noteName == "e" {
+			return "es"
+		}
+		return noteName + "es"
+	default:
+		return noteName
+	}
+}
+
+func (n Note) NameWithModifier() string {
+	return noteNameWithModifier(n.Name, n.Modifier)
+}
+
 func (n Note) LilypondSymbol() string {
-	return fmt.Sprintf("%s%s", n.Name, octaveModifier(n))
+	return fmt.Sprintf("%s%s", n.NameWithModifier(), octaveModifier(n))
 }
 
 func (n Note) Symbol() string {
-	return fmt.Sprintf("%s%s", n.Name, octaveModifierForFileName(n))
+	return fmt.Sprintf("%s%s", n.NameWithModifier(), octaveModifierForFileName(n))
 }
 
 func octaveModifier(note Note) string {
 	modifiers := []string{",", "", "'", "''", "'''"}
-	return modifiers[note.Index/12]
+	return modifiers[note.BaseNoteIndex/12]
 }
 
 func octaveModifierForFileName(note Note) string {
 	modifiers := []string{"l", "", "u", "uu", "uuu"}
-	return modifiers[note.Index/12]
+	return modifiers[note.BaseNoteIndex/12]
 }
 
 type Interval struct {
@@ -89,16 +112,16 @@ func (i Interval) Name() string {
 }
 
 func (i Interval) Distance() int {
-	return i.SecondNote.Index - i.FirstNote.Index
+	return i.SecondNote.ToneIndex() - i.FirstNote.ToneIndex()
 }
 
-func note(index int, name string, trebleClef bool, bassClef bool) Note {
+func note(toneIndex int, name string, trebleClef bool, bassClef bool) Note {
 	return Note{
-		Name:       name,
-		Modifier:   NoteModifierNone,
-		Index:      index,
-		TrebleClef: trebleClef,
-		BassClef:   bassClef,
+		Name:          name,
+		Modifier:      NoteModifierNone,
+		BaseNoteIndex: toneIndex,
+		TrebleClef:    trebleClef,
+		BassClef:      bassClef,
 	}
 }
 
