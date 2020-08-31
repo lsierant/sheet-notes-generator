@@ -1,6 +1,9 @@
 package notes
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type NoteModifier int
 
@@ -11,7 +14,7 @@ const (
 )
 
 type Note struct {
-	Name          string
+	BaseName      string
 	Modifier      NoteModifier
 	BaseNoteIndex int
 	TrebleClef    bool
@@ -59,7 +62,7 @@ func noteNameWithModifier(noteName string, modifier NoteModifier) string {
 }
 
 func (n Note) NameWithModifier() string {
-	return noteNameWithModifier(n.Name, n.Modifier)
+	return noteNameWithModifier(n.BaseName, n.Modifier)
 }
 
 func (n Note) LilypondSymbol() string {
@@ -103,12 +106,24 @@ var simpleIntervals = map[int]string{
 
 func (i Interval) Name() string {
 	switch diff := i.Distance(); {
+
+	case diff == 6:
+		cScale := "cdefgabcdefgab"
+		firstIndex := strings.Index(cScale, i.FirstNote.BaseName)
+		secondIndex := strings.Index(cScale[firstIndex+1:], i.SecondNote.BaseName) + firstIndex + 1
+
+		if secondIndex - firstIndex == 3 {
+			return "Augmented fourth"
+		} else if secondIndex - firstIndex == 4 {
+			return "Diminished fifth"
+		} else {
+			panic(fmt.Errorf("invalid scale diff: %d, %d, %+v", firstIndex, secondIndex, i))
+		}
 	case diff >= 0 && diff <= 12:
 		return simpleIntervals[diff]
 	default:
 		panic(fmt.Errorf("interval not supported: %d", diff))
 	}
-
 }
 
 func (i Interval) Distance() int {
@@ -117,7 +132,7 @@ func (i Interval) Distance() int {
 
 func note(toneIndex int, name string, trebleClef bool, bassClef bool) Note {
 	return Note{
-		Name:          name,
+		BaseName:      name,
 		Modifier:      NoteModifierNone,
 		BaseNoteIndex: toneIndex,
 		TrebleClef:    trebleClef,

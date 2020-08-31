@@ -31,10 +31,11 @@ func main() {
 	htmlFilePath := flag.String("htmlFilePath", "", "path to generated html file with all images")
 	parallel := flag.Int("parallel", runtime.NumCPU(), "level of parallelism, defaults to number of CPUs")
 	scaleFlag := flag.String("scale", "c major", `scale to use, e.g. "c flat major", "d minor", "c sharp minor", default: "c major"`)
+	accidentals := flag.Int("accidentals", 7, "filter scales up to given number of accidentals")
 
 	flag.Parse()
 
-	scales, err := filterScales(*scaleFlag)
+	scales, err := filterScales(*scaleFlag, *accidentals)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -92,11 +93,11 @@ func generateIntervals(scales []notes.Scale) []notes.Interval {
 	return intervals
 }
 
-func filterScales(scaleFlag string) ([]notes.Scale, error) {
+func filterScales(scaleFlag string, accidentals int) ([]notes.Scale, error) {
 	var scales []notes.Scale
 	if scaleFlag == "major" {
 		for _, scale := range notes.ScaleMap {
-			if scale.Mode == notes.ScaleModeMajor {
+			if scale.Mode == notes.ScaleModeMajor && len(scale.NotesModified) <= accidentals {
 				scales = append(scales, scale)
 			}
 		}
