@@ -36,7 +36,7 @@ var trebleOnlyIntervalTemplate = `
 upper = {
   \clef treble
   \once \override Staff.TimeSignature #'transparent = ##t
-  \key {{.FirstNote.Scale.LilypondSymbol}}
+  \key {{.Scale.LilypondSymbol}}
 
   
   <{{.FirstNote.LilypondSymbol}} {{.SecondNote.LilypondSymbol}}>4
@@ -44,7 +44,7 @@ upper = {
 
 lower = {
     \once \override Staff.TimeSignature #'transparent = ##t
-	\key {{.FirstNote.Scale.LilypondSymbol}}
+	\key {{.Scale.LilypondSymbol}}
 
     \clef bass
     
@@ -78,7 +78,7 @@ var bassOnlyIntervalTemplate = `
 upper = {
   \clef treble
   \once \override Staff.TimeSignature #'transparent = ##t
-  \key {{.FirstNote.Scale.LilypondSymbol}}
+  \key {{.Scale.LilypondSymbol}}
 
   
   s4
@@ -86,7 +86,7 @@ upper = {
 
 lower = {
     \once \override Staff.TimeSignature #'transparent = ##t
-	\key {{.FirstNote.Scale.LilypondSymbol}}
+	\key {{.Scale.LilypondSymbol}}
 
     \clef bass
     <{{.FirstNote.LilypondSymbol}} {{.SecondNote.LilypondSymbol}}>4
@@ -119,14 +119,14 @@ var bassAndTrebleIntervalTemplate = `
 upper = {
   \clef treble
   \once \override Staff.TimeSignature #'transparent = ##t
-  \key {{.FirstNote.Scale.LilypondSymbol}}
+  \key {{.Scale.LilypondSymbol}}
   
   {{.SecondNote.LilypondSymbol}}4
 }
 
 lower = {
     \once \override Staff.TimeSignature #'transparent = ##t
-	\key {{.FirstNote.Scale.LilypondSymbol}}
+	\key {{.Scale.LilypondSymbol}}
 
     \clef bass
 

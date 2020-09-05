@@ -19,7 +19,6 @@ type Note struct {
 	BaseNoteIndex int
 	TrebleClef    bool
 	BassClef      bool
-	Scale         Scale
 }
 
 func (n Note) ToneIndex() int {
@@ -86,6 +85,7 @@ func octaveModifierForFileName(note Note) string {
 type Interval struct {
 	FirstNote  Note
 	SecondNote Note
+	Scale Scale
 }
 
 var simpleIntervals = map[int]string{

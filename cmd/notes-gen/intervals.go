@@ -85,6 +85,7 @@ func generateIntervals(scales []notes.Scale) []notes.Interval {
 		intervalsInScale := notes.GenerateIntervals(notesInScale, 0, len(notesInScale), 12)
 		fmt.Printf("Scale: %s\n", scale.Name)
 		for i := 0; i < len(intervalsInScale); i++ {
+			intervalsInScale[i].Scale = scale
 			fmt.Printf("%s %s -> %s %s\n", intervalsInScale[i].FirstNote.NameWithModifier(), intervalsInScale[i].FirstNote.LilypondSymbol(), intervalsInScale[i].SecondNote.NameWithModifier(), intervalsInScale[i].SecondNote.LilypondSymbol())
 		}
 		intervals = append(intervals, intervalsInScale...)
@@ -129,12 +130,12 @@ func prepareDeck(intervals []notes.Interval) string {
 
 func prepareHtml(intervals []notes.Interval) string {
 	sort.Slice(intervals, func(i int, j int) bool {
-		if len(intervals[i].FirstNote.Scale.NotesModified) != len(intervals[j].FirstNote.Scale.NotesModified) {
-			return len(intervals[i].FirstNote.Scale.NotesModified) < len(intervals[j].FirstNote.Scale.NotesModified)
+		if len(intervals[i].Scale.NotesModified) != len(intervals[j].Scale.NotesModified) {
+			return len(intervals[i].Scale.NotesModified) < len(intervals[j].Scale.NotesModified)
 		}
 
-		if intervals[i].FirstNote.Scale.Name != intervals[j].FirstNote.Scale.Name {
-			return intervals[i].FirstNote.Scale.Name < intervals[j].FirstNote.Scale.Name
+		if intervals[i].Scale.Name != intervals[j].Scale.Name {
+			return intervals[i].Scale.Name < intervals[j].Scale.Name
 		}
 
 		if intervals[i].Distance() != intervals[j].Distance() {
@@ -194,7 +195,7 @@ func renderIntervalAndWriteFile(ctx context.Context, renderer lilypond.Renderer,
 }
 
 func intervalFileName(interval notes.Interval) string {
-	scaleName := strings.ReplaceAll(interval.FirstNote.Scale.Name, " ", "_")
+	scaleName := strings.ReplaceAll(interval.Scale.Name, " ", "_")
 	intervalFileName := fmt.Sprintf("%s_%s_%s", scaleName, interval.FirstNote, interval.SecondNote)
 	md5Hash := fmt.Sprintf("%x", md5.Sum([]byte(intervalFileName)))
 	return fmt.Sprintf("ng-%s-%s", md5Hash, intervalFileName)

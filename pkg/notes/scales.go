@@ -256,7 +256,6 @@ func ApplyScale(notes []Note, scale Scale) []Note {
 	var notesInScale []Note
 	for i := 0; i < len(notes); i++ {
 		note := notes[i]
-		note.Scale = scale
 		for j := 0; j < len(scale.NotesModified); j++ {
 			if note.BaseName == scale.NotesModified[j] {
 				note.Modifier = scale.Modifier
