@@ -15,4 +15,3 @@ func HandleSignals(handler func(os.Signal)) {
 		handler(sig)
 	}()
 }
-

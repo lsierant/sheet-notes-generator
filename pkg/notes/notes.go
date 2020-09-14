@@ -1,3 +1,4 @@
+//go:generate stringer -type=ChordType,ChordQuality,NoteModifier -output=enums_string.go
 package notes
 
 import (
@@ -19,6 +20,23 @@ type Note struct {
 	BaseNoteIndex int
 	TrebleClef    bool
 	BassClef      bool
+}
+
+func (n Note) NotesOnClefs(trebleClef bool) []Note {
+	var notes []Note
+	if n.TrebleClef && trebleClef {
+		trebleNote := n
+		trebleNote.BassClef = false
+		notes = append(notes, trebleNote)
+	}
+
+	if n.BassClef {
+		bassNote := n
+		bassNote.TrebleClef = false
+		notes = append(notes, bassNote)
+	}
+
+	return notes
 }
 
 func (n Note) ToneIndex() int {
@@ -60,8 +78,23 @@ func noteNameWithModifier(noteName string, modifier NoteModifier) string {
 	}
 }
 
+func noteNameWithSharpFlatModifier(noteName string, modifier NoteModifier) string {
+	switch modifier {
+	case NoteModifierSharp:
+		return strings.ToUpper(noteName) + "♯"
+	case NoteModifierFlat:
+		return strings.ToUpper(noteName) + "♭"
+	default:
+		return strings.ToUpper(noteName)
+	}
+}
+
 func (n Note) NameWithModifier() string {
 	return noteNameWithModifier(n.BaseName, n.Modifier)
+}
+
+func (n Note) NameWithSharpFlatModifier() string {
+	return noteNameWithSharpFlatModifier(n.BaseName, n.Modifier)
 }
 
 func (n Note) LilypondSymbol() string {
@@ -85,7 +118,7 @@ func octaveModifierForFileName(note Note) string {
 type Interval struct {
 	FirstNote  Note
 	SecondNote Note
-	Scale Scale
+	Scale      Scale
 }
 
 var simpleIntervals = map[int]string{
@@ -112,9 +145,9 @@ func (i Interval) Name() string {
 		firstIndex := strings.Index(cScale, i.FirstNote.BaseName)
 		secondIndex := strings.Index(cScale[firstIndex+1:], i.SecondNote.BaseName) + firstIndex + 1
 
-		if secondIndex - firstIndex == 3 {
+		if secondIndex-firstIndex == 3 {
 			return "Augmented fourth"
-		} else if secondIndex - firstIndex == 4 {
+		} else if secondIndex-firstIndex == 4 {
 			return "Diminished fifth"
 		} else {
 			panic(fmt.Errorf("invalid scale diff: %d, %d, %+v", firstIndex, secondIndex, i))
