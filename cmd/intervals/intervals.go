@@ -35,14 +35,14 @@ func main() {
 
 	flag.Parse()
 
-	scales, err := filterScales(*scaleFlag, *accidentals)
+	scales, err := utils.FilterScales(*scaleFlag, *accidentals)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	intervals := generateIntervals(scales)
-
 	renderer := lilypond.Renderer{WorkingDir: *tmpDir}
+
+	intervals := generateIntervals(scales)
 
 	deckFileContent := prepareDeck(intervals)
 
@@ -94,29 +94,6 @@ func generateIntervals(scales []notes.Scale) []notes.Interval {
 	return intervals
 }
 
-func filterScales(scaleFlag string, accidentals int) ([]notes.Scale, error) {
-	var scales []notes.Scale
-	if scaleFlag == "major" {
-		for _, scale := range notes.ScaleMap {
-			if scale.Mode == notes.ScaleModeMajor && len(scale.NotesModified) <= accidentals {
-				scales = append(scales, scale)
-			}
-		}
-	} else {
-		scale, ok := notes.ScaleMap[scaleFlag]
-		if !ok {
-			return nil, fmt.Errorf("invalid scale: %s", scaleFlag)
-		}
-		scales = append(scales, scale)
-	}
-
-	if len(scales) == 0 {
-		return nil, fmt.Errorf("no scales found for: %s", scaleFlag)
-	}
-
-	return scales, nil
-}
-
 func prepareDeck(intervals []notes.Interval) string {
 	deckLines := make([]string, 0)
 
@@ -157,6 +134,7 @@ func prepareHtml(intervals []notes.Interval) string {
 	}
 
 	return fmt.Sprintf(`
+<?xml version="1.0" encoding="utf-8" ?>
 <html>
 <body>
 %s

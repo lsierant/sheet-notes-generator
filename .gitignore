@@ -3,6 +3,7 @@ bin
 tmp
 .DS_Store
 images
+images_chords
 *.csv
 *.eps
 *.mid
@@ -13,3 +14,5 @@ images
 *.midi
 *.html
 *.zip
+deck
+chords_one_page

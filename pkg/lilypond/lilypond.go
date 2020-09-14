@@ -87,3 +87,26 @@ func RenderIntervalImage(ctx context.Context, renderer *Renderer, interval notes
 
 	return png, err
 }
+
+func RenderChordSource(ctx context.Context, renderer *Renderer, chord MultipleChords) (string, error) {
+	source, err := parseAndRenderTextTemplate("chord", chordTemplate, chord)
+	if err != nil {
+		return "", fmt.Errorf("failed to render chord template: %v", err)
+	}
+
+	return source, nil
+}
+
+func RenderChordImage(ctx context.Context, renderer *Renderer, chord MultipleChords) ([]byte, error) {
+	source, err := parseAndRenderTextTemplate("chord", chordTemplate, chord)
+	if err != nil {
+		return nil, fmt.Errorf("failed to render chord template: %v", err)
+	}
+
+	png, err := renderer.RenderPNG(ctx, source)
+	if err != nil {
+		return nil, fmt.Errorf("failed to render chord PNG from source: %s: %v", source, err)
+	}
+
+	return png, err
+}

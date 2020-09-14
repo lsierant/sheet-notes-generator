@@ -1,10 +1,15 @@
 package notes
 
+import (
+	"fmt"
+	"strings"
+)
+
 type ScaleMode int
 
 const (
-	ScaleModeMajor         = 0
-	ScaleModeMinorHarmonic = 1
+	ScaleModeMajor ScaleMode = iota
+	ScaleModeMinorHarmonic
 )
 
 type Scale struct {
@@ -14,6 +19,91 @@ type Scale struct {
 	NotesModified  []string
 	Name           string
 	LilypondSymbol string
+}
+
+func (s Scale) Degree(note string) ScaleDegree {
+	switch s.Mode {
+	case ScaleModeMajor:
+		return MajorScaleDegrees[degreeOfNoteInScale(note, s)]
+	default:
+		panic(fmt.Errorf("unsupported scale mode: %v", s.Mode))
+	}
+}
+
+func degreeOfNoteInScale(note string, scale Scale) int {
+	notesInCScale := "cdefgabcdefgab"
+	idx := strings.Index(notesInCScale, scale.Note)
+	if idx == -1 {
+		panic(fmt.Errorf("invalid scale note: %s", note))
+	}
+	notesInScale := notesInCScale[idx:]
+	idx = strings.Index(notesInScale, note)
+	if idx == -1 {
+		panic(fmt.Errorf("invalid note: %s", note))
+	}
+
+	return idx
+}
+
+type ScaleDegree struct {
+	Degree              int
+	Quality             ChordQuality
+	RomanNumeralTriad   string
+	RomanNumeralSeventh string
+	TriadType           ChordType
+	SeventhType         ChordType
+}
+
+var MajorScaleDegrees = []ScaleDegree{
+	{
+		Quality:             ChordQualityMajor,
+		RomanNumeralTriad:   "I",
+		RomanNumeralSeventh: "I7",
+		TriadType:           ChordTypeMajorTriad,
+		SeventhType:         ChordTypeMajorSeventh,
+	},
+	{
+		Quality:             ChordQualityMinor,
+		RomanNumeralTriad:   "ii",
+		RomanNumeralSeventh: "ii7",
+		TriadType:           ChordTypeMinorTriad,
+		SeventhType:         ChordTypeMinorSeventh,
+	},
+	{
+		Quality:             ChordQualityMinor,
+		RomanNumeralTriad:   "iii",
+		RomanNumeralSeventh: "iii7",
+		TriadType:           ChordTypeMinorTriad,
+		SeventhType:         ChordTypeMinorSeventh,
+	},
+	{
+		Quality:             ChordQualityMajor,
+		RomanNumeralTriad:   "IV",
+		RomanNumeralSeventh: "IV7",
+		TriadType:           ChordTypeMajorTriad,
+		SeventhType:         ChordTypeMajorSeventh,
+	},
+	{
+		Quality:             ChordQualityMajor,
+		RomanNumeralTriad:   "V",
+		RomanNumeralSeventh: "V7",
+		TriadType:           ChordTypeMajorTriad,
+		SeventhType:         ChordTypeDominantSeventh,
+	},
+	{
+		Quality:             ChordQualityMinor,
+		RomanNumeralTriad:   "vi",
+		RomanNumeralSeventh: "vi7",
+		TriadType:           ChordTypeMinorTriad,
+		SeventhType:         ChordTypeMinorSeventh,
+	},
+	{
+		Quality:             ChordQualityDiminished,
+		RomanNumeralTriad:   "vii°",
+		RomanNumeralSeventh: "vii⦰7",
+		TriadType:           ChordTypeDiminishedTriad,
+		SeventhType:         ChordTypeHalfDiminishedSeventh,
+	},
 }
 
 var (
