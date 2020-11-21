@@ -160,7 +160,11 @@ func (i Interval) Name() string {
 }
 
 func (i Interval) Distance() int {
-	return i.SecondNote.ToneIndex() - i.FirstNote.ToneIndex()
+	if dist := i.SecondNote.ToneIndex() - i.FirstNote.ToneIndex(); dist < 0 {
+		return dist * -1
+	} else {
+		return dist
+	}
 }
 
 func note(toneIndex int, name string, trebleClef bool, bassClef bool) Note {

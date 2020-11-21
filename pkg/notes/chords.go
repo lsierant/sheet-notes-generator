@@ -88,6 +88,64 @@ func GenerateAllDiatonicTriadsInScale(scale Scale) []Chord {
 	return resultChords
 }
 
+func GenerateAllDiatonicSeventhsInScaleWithoutFifths(scale Scale) []Chord {
+	var resultChords []Chord
+
+	scaleNotes := ApplyScale(AllNotes, scale)
+	for i := 0; i < len(scaleNotes); i++ {
+		fmt.Printf("%d\t notes[%d]=%+v, %s\n", i, scaleNotes[i].BaseNoteIndex, scaleNotes[i], scaleNotes[i].LilypondSymbol())
+	}
+
+	seventhNotes := noteNamesOfAllSeventhsWithoutFifth()
+
+	for i := 0; i < len(seventhNotes); i++ {
+		chords := generateAllTriadsForChord(scaleNotes, seventhNotes[i], scale)
+
+		fmt.Printf("all chords size = %d\n", len(chords))
+		filteredChords := filterChordsUsingPredicate(chords, chordNotesHasMinimumDistanceBetweenNotes(3))
+
+		fmt.Printf("filtered size = %d\n", len(filteredChords))
+
+		chords = filteredChords
+
+		fmt.Printf("triadNotes: %s\n", seventhNotes)
+
+		for chordIdx := 0; chordIdx < len(chords); chordIdx++ {
+			fmt.Printf("chord: %s (%s)\n", chords[chordIdx].RootNote, chords[chordIdx].Type)
+			chordsOnClefs := generateChordsOnClefs(chords[chordIdx], scale)
+			resultChords = append(resultChords, chordsOnClefs...)
+		}
+	}
+
+	return resultChords
+}
+
+func filterChordsUsingPredicate(chords []Chord, p func(Chord) bool) []Chord {
+	var filteredChords []Chord
+	for i := 0; i < len(chords); i++ {
+		if p(chords[i]) {
+			filteredChords = append(filteredChords, chords[i])
+		}
+	}
+
+	return filteredChords
+}
+
+func chordNotesHasMinimumDistanceBetweenNotes(minDistance int) func(Chord) bool {
+	return func(chord Chord) bool {
+		for j := 0; j < len(chord.Notes); j++ {
+			for k := j + 1; k < len(chord.Notes); k++ {
+				interval := Interval{FirstNote: chord.Notes[j], SecondNote: chord.Notes[k]}
+				if interval.Distance() < minDistance {
+					return false
+				}
+			}
+		}
+
+		return true
+	}
+}
+
 func ChordToChordOnClefs(chord Chord) ChordOnClefs {
 	chordOnClefs := ChordOnClefs{}
 	for i := 0; i < len(chord.Notes); i++ {
@@ -162,8 +220,8 @@ func generateAllTriadsForChord(noteList []Note, triadNotes string, scale Scale) 
 			Type:     degree.TriadType,
 		}
 
-		fmt.Printf("chord: %s: %s,%s,%s: %s, %s, %s: %s\n", triadNotes, tenorNote.LilypondSymbol(), altoNote.LilypondSymbol(), sopranoNote.LilypondSymbol(),
-			Interval{tenorNote, altoNote, scale}.Name(), Interval{altoNote, sopranoNote, scale}.Name(), Interval{tenorNote, sopranoNote, scale}.Name(), chord.Type)
+		//fmt.Printf("chord: %s: %s,%s,%s: %s, %s, %s: %s, %s\n", triadNotes, tenorNote.LilypondSymbol(), altoNote.LilypondSymbol(), sopranoNote.LilypondSymbol(),
+		//	Interval{tenorNote, altoNote, scale}.Name(), Interval{altoNote, sopranoNote, scale}.Name(), Interval{tenorNote, sopranoNote, scale}.Name(), chord.Type, fname)
 
 		resultChords = append(resultChords, chord)
 	}
@@ -190,4 +248,26 @@ func noteNamesOfAllTriads() []string {
 	}
 
 	return triads
+}
+
+func NoteNamesOfAllTriads() []string {
+	var triads []string
+	cScale := "cdefgabcdefgab"
+	for i := 0; i < 7; i++ {
+		triads = append(triads, fmt.Sprintf("%c%c%c", cScale[i], cScale[i+2], cScale[i+4]))
+	}
+
+	return triads
+}
+
+func noteNamesOfAllSeventhsWithoutFifth() []string {
+	return []string{
+		"ceb",
+		"dfc",
+		"egd",
+		"fae",
+		"gbf",
+		"acg",
+		"bda",
+	}
 }

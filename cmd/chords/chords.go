@@ -34,8 +34,8 @@ func main() {
 	parallel := flag.Int("parallel", runtime.NumCPU(), "level of parallelism, defaults to number of CPUs")
 	scaleFlag := flag.String("scale", "c major", `scale to use, e.g. "c flat major", "d minor", "c sharp minor", default: "c major"`)
 	accidentals := flag.Int("accidentals", 7, "filter scales up to given number of accidentals")
-	triads := flag.Bool("triads", true, "generate triads")
-	//sevenths := flag.Bool("sevenths", false, "generate triads")
+	triads := flag.Bool("triads", false, "generate triads")
+	sevenths := flag.Bool("sevenths", false, "generate sevenths")
 	onePager := flag.Bool("onePager", false, "generate one pager instead of deck")
 
 	flag.Parse()
@@ -48,7 +48,11 @@ func main() {
 	renderer := lilypond.Renderer{WorkingDir: *tmpDir}
 
 	if *onePager {
-		renderAllDiatonicTriadsOnOnePage(ctx, renderer, *imageDir, scales)
+		if *triads {
+			renderAllDiatonicTriadsOnOnePage(ctx, renderer, *imageDir, scales)
+		} else if *sevenths {
+			renderAllDiatonicSeventhsWithoutFifthOnOnePage(ctx, renderer, *imageDir, scales)
+		}
 	} else {
 		if *triads {
 			triads := generateAllTriadsInScales(scales)
@@ -79,6 +83,31 @@ func renderAllDiatonicTriadsOnOnePage(ctx context.Context, renderer lilypond.Ren
 		chords := notes.GenerateAllDiatonicTriadsInScale(scales[s])
 
 		chordFilePath := fmt.Sprintf("%s/ng-chord-all-%s.png", destDir, scales[s].Name)
+		fmt.Println(chordFilePath)
+		if _, err := os.Stat(chordFilePath); err == nil {
+			fmt.Printf("Skipping rendering: %s\n", chordFilePath)
+			continue
+		}
+
+		multipleChords := lilypond.MultipleChords{
+			Scale:  scales[s].LilypondSymbol,
+			Chords: convertToLilypondChords(chords),
+		}
+
+		err := renderChordAndWriteFile(ctx, renderer, multipleChords, chordFilePath)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	fmt.Println("Done...")
+}
+
+func renderAllDiatonicSeventhsWithoutFifthOnOnePage(ctx context.Context, renderer lilypond.Renderer, destDir string, scales []notes.Scale) {
+	for s := 0; s < len(scales); s++ {
+		chords := notes.GenerateAllDiatonicSeventhsInScaleWithoutFifths(scales[s])
+
+		chordFilePath := fmt.Sprintf("%s/ng-chord-all-7w5-%s.png", destDir, scales[s].Name)
 		fmt.Println(chordFilePath)
 		if _, err := os.Stat(chordFilePath); err == nil {
 			fmt.Printf("Skipping rendering: %s\n", chordFilePath)
