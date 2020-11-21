@@ -302,7 +302,7 @@ func deckLine(chord notes.Chord) string {
 }
 
 func backText(chord notes.Chord) string {
-	return fmt.Sprintf("%s", chord.Name())
+	return fmt.Sprintf("%s (%s)", chord.Name(), chord.RomanNumeral())
 }
 
 func frontText(chord notes.Chord) string {

@@ -37,6 +37,23 @@ func (c Chord) Name() string {
 	return name
 }
 
+func (c Chord) RomanNumeral() string {
+	if c.isTriad() {
+		return c.Scale.Degree(c.RootNote.BaseName).RomanNumeralTriad
+	}
+
+	return c.Scale.Degree(c.RootNote.BaseName).RomanNumeralSeventh
+}
+
+func (c Chord) isTriad() bool {
+	switch c.Type {
+	case ChordTypeMajorTriad, ChordTypeMinorTriad, ChordTypeDiminishedTriad, ChordTypeAugmentedTriad:
+		return true
+	}
+
+	return false
+}
+
 type ChordOnClefs struct {
 	TrebleClefNotes []Note
 	BassClefNotes   []Note
