@@ -252,7 +252,7 @@ var (
 	}
 
 	DFlatMajorScale = Scale{
-		Note:           "a",
+		Note:           "d",
 		LilypondSymbol: `des \major`,
 		Name:           "d flat major",
 		Mode:           ScaleModeMajor,
