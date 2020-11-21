@@ -4,7 +4,6 @@ tmp
 .DS_Store
 images
 images_chords
-*.csv
 *.eps
 *.mid
 *.count
